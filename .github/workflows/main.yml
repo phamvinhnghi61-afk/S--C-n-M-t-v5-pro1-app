@@ -1,0 +1,35 @@
+convert ../../../../../assets/icon.png -resize 72x72 mipmap-hdpi/ic_launcher.png
+          convert ../../../../../assets/icon.png -resize 72x72 mipmap-hdpi/ic_launcher_round.png
+          convert ../../../../../assets/icon.png -resize 72x72 mipmap-hdpi/ic_launcher_foreground.png
+
+          convert ../../../../../assets/icon.png -resize 96x96 mipmap-xhdpi/ic_launcher.png
+          convert ../../../../../assets/icon.png -resize 96x96 mipmap-xhdpi/ic_launcher_round.png
+          convert ../../../../../assets/icon.png -resize 96x96 mipmap-xhdpi/ic_launcher_foreground.png
+
+          convert ../../../../../assets/icon.png -resize 144x144 mipmap-xxhdpi/ic_launcher.png
+          convert ../../../../../assets/icon.png -resize 144x144 mipmap-xxhdpi/ic_launcher_round.png
+          convert ../../../../../assets/icon.png -resize 144x144 mipmap-xxhdpi/ic_launcher_foreground.png
+
+          convert ../../../../../assets/icon.png -resize 192x192 mipmap-xxxhdpi/ic_launcher.png
+          convert ../../../../../assets/icon.png -resize 192x192 mipmap-xxxhdpi/ic_launcher_round.png
+          convert ../../../../../assets/icon.png -resize 192x192 mipmap-xxxhdpi/ic_launcher_foreground.png
+
+          # Thay thế file cấu hình adaptive launcher mặc định bằng icon tùy biến
+          find . -name "ic_launcher_background.xml" -exec cp -f ../../../../../assets/icon.png {} \; || true
+          echo "Hoàn tất xử lý và chèn ép cưỡng bức icon mới cho Android."
+
+      - name: Sync Capacitor Project
+        run: |
+          npx cap sync android
+
+      - name: Build Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SoCanMitPro-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk

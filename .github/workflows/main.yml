@@ -1,25 +1,55 @@
-convert ../../../../../assets/icon.png -resize 72x72 mipmap-hdpi/ic_launcher.png
-          convert ../../../../../assets/icon.png -resize 72x72 mipmap-hdpi/ic_launcher_round.png
-          convert ../../../../../assets/icon.png -resize 72x72 mipmap-hdpi/ic_launcher_foreground.png
+name: Build Android APK with Icon
 
-          convert ../../../../../assets/icon.png -resize 96x96 mipmap-xhdpi/ic_launcher.png
-          convert ../../../../../assets/icon.png -resize 96x96 mipmap-xhdpi/ic_launcher_round.png
-          convert ../../../../../assets/icon.png -resize 96x96 mipmap-xhdpi/ic_launcher_foreground.png
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
 
-          convert ../../../../../assets/icon.png -resize 144x144 mipmap-xxhdpi/ic_launcher.png
-          convert ../../../../../assets/icon.png -resize 144x144 mipmap-xxhdpi/ic_launcher_round.png
-          convert ../../../../../assets/icon.png -resize 144x144 mipmap-xxhdpi/ic_launcher_foreground.png
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-          convert ../../../../../assets/icon.png -resize 192x192 mipmap-xxxhdpi/ic_launcher.png
-          convert ../../../../../assets/icon.png -resize 192x192 mipmap-xxxhdpi/ic_launcher_round.png
-          convert ../../../../../assets/icon.png -resize 192x192 mipmap-xxxhdpi/ic_launcher_foreground.png
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-          # Thay thế file cấu hình adaptive launcher mặc định bằng icon tùy biến
-          find . -name "ic_launcher_background.xml" -exec cp -f ../../../../../assets/icon.png {} \; || true
-          echo "Hoàn tất xử lý và chèn ép cưỡng bức icon mới cho Android."
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-      - name: Sync Capacitor Project
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Prepare Web Assets & App Icon
         run: |
+          mkdir -p www assets
+          HTML_FILE=$(find . -maxdepth 2 -name "*.html" ! -path "./www/*" | head -n 1)
+          if [ -n "$HTML_FILE" ]; then
+            cp "$HTML_FILE" www/index.html
+          else
+            echo "Khong tim thay file .html nao!"
+            exit 1
+          fi
+
+          ICON_FILE=$(find . -maxdepth 2 \( -name "icon.png" -o -name "icon.jpg" -o -name "*.png" \) ! -path "./assets/*" ! -path "./www/*" | head -n 1)
+          if [ -n "$ICON_FILE" ]; then
+            cp "$ICON_FILE" assets/icon.png
+            echo "Da tim thay icon: $ICON_FILE"
+          fi
+
+      - name: Initialize Capacitor & Generate Android Icons
+        run: |
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/assets
+          npx cap init "Sổ Cân Mít Pro" "vn.io.linhkienpinthapmuoi.socanmit" --web-dir=www
+          npx cap add android
+          if [ -f "assets/icon.png" ]; then
+            npx capacitor-assets generate --android --iconBackgroundColor '#0c5a30'
+          fi
           npx cap sync android
 
       - name: Build Debug APK
